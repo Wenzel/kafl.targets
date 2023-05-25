@@ -1,0 +1,49 @@
+- name: Deploy
+  hosts: default
+  tasks:
+    - name: ping
+      win_ping:
+    # - name: Fix Windows Update
+    #   ansible.windows.win_updates:
+    #     skip_optional: true
+    #     reboot: true
+
+    # - name: Fix Windows Update 2
+    #   ansible.windows.win_updates:
+    #     skip_optional: true
+    #     reboot: true
+
+    # - name: Fix Windows Update 3
+    #   ansible.windows.win_updates:
+    #     skip_optional: true
+    #     reboot: true
+
+    # # - name: reboot
+    # #   win_reboot:
+
+    # # - name: Fix Windows Update 2
+    # #   ansible.windows.win_updates:
+    # #     category_names:
+    # #       - CriticalUpdates
+    # #     skip_optional: true
+
+    # # - name: Install required update
+    # #   ansible.windows.win_updates:
+    # #     accept_list:
+    # #       - KB2919355
+    # #     skip_optional: true
+
+    # # - name: reboot
+    # #   win_reboot:
+
+    # # - name: Install Windows SDK
+    # #   win_chocolatey:
+    # #     name: windows-sdk-8.1
+
+    # # - name: Install tools
+    # #   win_chocolatey:
+    # #     name: googlechrome
+
+    # - name: Install Visual Studio Build Tools
+    #   win_chocolatey:
+    #     name: visualstudio2022buildtools

@@ -1,0 +1,21 @@
+Vagrant.configure("2") do |config|
+  # The Packer box we just added
+  config.vm.box = "kafl_windows"
+  # we use winrm
+  config.vm.communicator = "winrm"
+  # credentials
+  config.winrm.username = "vagrant"
+  config.winrm.password = "vagrant"
+  # explicitely tell Vagrant that this is a Windows guest
+  # no need to guess
+  config.vm.guest = :windows
+
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.disk_bus = "ide"
+    libvirt.nic_model_type = "e1000e"
+    # send absolute mouse movments to QEMU VNC display using a tablet
+    # otherwise the guest mouse pointer is always out of sync with the host pointer, very annoying
+    libvirt.input :type => "tablet", :bus => "usb"
+    libvirt.memory = 4096
+  end
+end
