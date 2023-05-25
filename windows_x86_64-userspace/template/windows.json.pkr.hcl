@@ -91,7 +91,12 @@ source "qemu" "windows" {
   http_port_min    = 8500
   iso_checksum     = "${var.iso_checksum_type}:${var.iso_checksum}"
   iso_url          = "${var.iso_url}"
+  machine_type     = "q35"
   memory           = "${var.memory}"
+  qemuargs         = [
+    ["-usb"],
+    ["-device", "usb-tablet"]
+  ]
   net_device       = "rtl8139"
   shutdown_command = "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\""
   skip_compaction  = false
@@ -118,6 +123,7 @@ build {
     use_proxy = false
     keep_inventory_file = true
     extra_arguments = [
+      "-e", "ansible_winrm_scheme=http",
       "-v"
     ]
   }
