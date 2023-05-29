@@ -32,7 +32,6 @@
                 <FullName>Vagrant Administrator</FullName>
                 <Organization>Vagrant Inc.</Organization>
                 <ProductKey>
-                    <Key></Key>
                     <WillShowUI>OnError</WillShowUI>
                 </ProductKey>
             </UserData>
