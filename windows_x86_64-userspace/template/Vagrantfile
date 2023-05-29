@@ -4,7 +4,7 @@ Vagrant.configure("2") do |config|
       # our box name in libvirt
     config.vm.define "vagrant-kafl-windows"
   
-    config.vm.synced_folder "sharedir", '/vagrant', type: 'rsync'
+    config.vm.synced_folder "sharedir", '/vagrant', type: 'rsync', disabled: true
     config.vm.provider :libvirt do |libvirt|
         # send absolute mouse movments to QEMU VNC display using a tablet
         # otherwise the guest mouse pointer is always out of sync with the host pointer, very annoying
