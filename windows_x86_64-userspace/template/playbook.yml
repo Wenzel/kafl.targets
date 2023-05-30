@@ -1,49 +1,33 @@
 - name: Deploy
   hosts: default
   tasks:
-    - name: ping
-      win_ping:
-    # - name: Fix Windows Update
-    #   ansible.windows.win_updates:
-    #     skip_optional: true
-    #     reboot: true
+    - name: Download DotNet framework 4.6.2
+      win_get_url:
+        url: http://go.microsoft.com/fwlink/?linkid=780600
+        dest: "{{ ansible_facts['env']['TEMP'] }}\\dotnet.exe"
 
-    # - name: Fix Windows Update 2
-    #   ansible.windows.win_updates:
-    #     skip_optional: true
-    #     reboot: true
+    # auto install through Visual Studio raises "OS is not supported error"
+    # must do a manual install here
+    - name: Install DotNet framework 4.6.2
+      win_command:
+        cmd: dotnet.exe /q /norestart
+      args:
+        chdir: "{{ ansible_facts['env']['TEMP'] }}"
+      register: result
+      failed_when:
+        - result.rc != 0
+        - result.rc != 3010 # restart required
 
-    # - name: Fix Windows Update 3
-    #   ansible.windows.win_updates:
-    #     skip_optional: true
-    #     reboot: true
+    - name: Reboot
+      win_reboot:
 
-    # # - name: reboot
-    # #   win_reboot:
+    - name: Download Visual Studio 2017 build tools installer
+      win_get_url:
+        url: https://aka.ms/vs/15/release/vs_buildtools.exe
+        dest: "{{ ansible_facts['env']['TEMP'] }}\\vs_buildtools.exe"
 
-    # # - name: Fix Windows Update 2
-    # #   ansible.windows.win_updates:
-    # #     category_names:
-    # #       - CriticalUpdates
-    # #     skip_optional: true
-
-    # # - name: Install required update
-    # #   ansible.windows.win_updates:
-    # #     accept_list:
-    # #       - KB2919355
-    # #     skip_optional: true
-
-    # # - name: reboot
-    # #   win_reboot:
-
-    # # - name: Install Windows SDK
-    # #   win_chocolatey:
-    # #     name: windows-sdk-8.1
-
-    # # - name: Install tools
-    # #   win_chocolatey:
-    # #     name: googlechrome
-
-    # - name: Install Visual Studio Build Tools
-    #   win_chocolatey:
-    #     name: visualstudio2022buildtools
+    - name: Install VS
+      win_command:
+        cmd: vs_buildtools.exe --quiet --wait --norestart --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows10SDK.17763 --add Microsoft.VisualStudio.Component.VC.CoreIde
+      args:
+        chdir: "{{ ansible_facts['env']['TEMP'] }}"
