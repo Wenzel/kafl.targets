@@ -1,4 +1,4 @@
-vm_name = "win8"
+vm_name = "win10"
 cpus = "4"
 disk_size = "65536"
 iso_url = "http://download.microsoft.com/download/C/3/9/C399EEA8-135D-4207-92C9-6AAB3259F6EF/10240.16384.150709-1700.TH1_CLIENTENTERPRISEEVAL_OEMRET_X64FRE_EN-US.ISO"
