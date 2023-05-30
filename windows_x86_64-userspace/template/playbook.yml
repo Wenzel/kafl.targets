@@ -26,7 +26,8 @@
         url: https://aka.ms/vs/15/release/vs_buildtools.exe
         dest: "{{ ansible_facts['env']['TEMP'] }}\\vs_buildtools.exe"
 
-    - name: Install VS
+    # https://learn.microsoft.com/fr-fr/previous-versions/visualstudio/visual-studio-2017/install/workload-component-id-vs-community?view=vs-2017&preserve-view=true
+    - name: Install Visual Studio compiler and SDK
       win_command:
         cmd: vs_buildtools.exe --quiet --wait --norestart --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows10SDK.17763 --add Microsoft.VisualStudio.Component.VC.CoreIde
       args:
