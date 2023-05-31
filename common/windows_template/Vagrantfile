@@ -1,0 +1,16 @@
+Vagrant.configure("2") do |config|
+    # The Packer box we just added
+    config.vm.box = "kafl_windows"
+      # our box name in libvirt
+    config.vm.define "vagrant-kafl-windows"
+  
+    config.vm.synced_folder "sharedir", '/vagrant', type: 'rsync', disabled: true
+    config.vm.provider :libvirt do |libvirt|
+        # send absolute mouse movments to QEMU VNC display using a tablet
+        # otherwise the guest mouse pointer is always out of sync with the host pointer, very annoying
+        libvirt.input :type => "tablet", :bus => "usb"
+        libvirt.cpus = 4
+        libvirt.memory = 4096
+      end
+  end
+  
