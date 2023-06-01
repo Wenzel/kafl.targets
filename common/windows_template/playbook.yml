@@ -1,6 +1,44 @@
 - name: Deploy
   hosts: default
   tasks:
+    - name: Download OpenSSH server
+      win_get_url:
+        url: https://github.com/PowerShell/Win32-OpenSSH/releases/download/v9.2.2.0p1-Beta/OpenSSH-Win64-v9.2.2.0.msi
+        dest: "{{ ansible_facts['env']['TEMP'] }}\\openssh_server.msi"
+
+    - name: Install OpenSSH server
+      win_package:
+        path: "{{ ansible_facts['env']['TEMP'] }}\\openssh_server.msi"
+        product_id: '{DF612DC9-F0C5-420C-B297-6DF941EEB7FE}'
+        arguments: 'ADDLOCAL=Server'
+
+    - name: Open firewall for OpenSSH
+      win_shell: New-NetFirewallRule -Name sshd -DisplayName 'OpenSSH Server (sshd)' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22
+      args:
+        executable: powershell
+
+    - name: Create authorized_keys file
+      win_shell: "New-Item -ItemType File -Path {{ ansible_facts['env']['USERPROFILE'] }}\\.ssh\\authorized_keys -Force" 
+      args:
+        executable: powershell
+
+    - name: add Vagrant's insecure key in authorized_keys
+      win_get_url:
+        url: https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub
+        dest: "{{ ansible_facts['env']['USERPROFILE'] }}\\.ssh\\authorized_keys"
+
+    - name: Ensure sshd is setup to autostart
+      win_shell: Set-Service sshd -StartupType Automatic
+      args:
+        executable: powershell
+
+    # - name: Install OpenSSH server
+    #   win_chocolatey:
+    #     name: win32-openssh
+    #     # must override default password
+    #     package_params: '/SSHServerFeature /Password:${{ ansible_password }}'
+    #     ignore_dependencies: true
+
     - name: Download DotNet framework 4.6.2
       win_get_url:
         url: http://go.microsoft.com/fwlink/?linkid=780600
