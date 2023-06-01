@@ -83,7 +83,7 @@ source "qemu" "windows" {
   disk_compression = true
   disk_interface   = "ide"
   disk_size        = "${var.disk_size}"
-  floppy_files     = ["${var.autounattend}", "scripts/setup_winrm_public.bat"]
+  floppy_files     = ["${var.autounattend}", "scripts/fixnetwork.ps1", "scripts/setup_winrm_public.bat"]
   format           = "qcow2"
   headless         = "${var.headless}"
   iso_checksum     = "${var.iso_checksum_type}:${var.iso_checksum}"

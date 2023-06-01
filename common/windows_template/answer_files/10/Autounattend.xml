@@ -123,15 +123,21 @@
                     <RequiresUserInput>true</RequiresUserInput>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
+                    <CommandLine>powershell -File a:\fixnetwork.ps1</CommandLine>
+                    <Description>Force network to be private</Description>
+                    <Order>4</Order>
+                    <RequiresUserInput>true</RequiresUserInput>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
                     <CommandLine>cmd.exe /c start a:\setup_winrm_public.bat</CommandLine>
                     <Description>Enable WinRM on public networks</Description>
-                    <Order>4</Order>
+                    <Order>5</Order>
                     <RequiresUserInput>true</RequiresUserInput>
                 </SynchronousCommand>
                <SynchronousCommand wcm:action="add">
                     <CommandLine>cmd.exe /c reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" /v AUOptions /t REG_DWORD /d 2 /f</CommandLine>
                     <Description>Disable auto Windows Updates</Description>
-                    <Order>5</Order>
+                    <Order>6</Order>
                     <RequiresUserInput>true</RequiresUserInput>
                 </SynchronousCommand>
             </FirstLogonCommands>
