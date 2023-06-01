@@ -12,5 +12,10 @@ Vagrant.configure("2") do |config|
         libvirt.cpus = 4
         libvirt.memory = 4096
       end
+
+    config.vm.provision "ansible" do |ansible|
+      ansible.playbook = "setup_target.yml"
+      ansible.verbose = true
+    end
   end
   

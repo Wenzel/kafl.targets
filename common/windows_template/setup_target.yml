@@ -1,0 +1,5 @@
+- name: Setup target
+  hosts: all
+  tasks:
+    - name: ping
+      win_ping:
