@@ -71,6 +71,11 @@ variable "winrm_username" {
   default = "vagrant"
 }
 
+variable "https_proxy" {
+  type    = string
+  default = env("https_proxy")
+}
+
 # source blocks are generated from your builders; a source can be referenced in
 # build blocks. A build block runs provisioner and post-processors on a
 # source. Read the documentation for source blocks here:
@@ -121,6 +126,7 @@ build {
     keep_inventory_file = true
     extra_arguments = [
       "-e", "ansible_winrm_scheme=http",
+      "-e", "ansible_proxy=${var.https_proxy}",
       "-v"
     ]
   }
