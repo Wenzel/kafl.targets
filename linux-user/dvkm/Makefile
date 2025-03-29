@@ -24,8 +24,31 @@ CONFIG_OPTS := \
 	--enable GDB_SCRIPTS
 
 ifdef DVKM_KASAN
-CONFIG_OPTS += --enable KASAN --enable KASAN_INLINE
+# -- Memory safety: out-of-bounds, UAF, etc.
+CONFIG_OPTS += \
+	--enable KASAN \
+	--enable KASAN_INLINE \
+	--enable KASAN_GENERIC
+
+# -- Undefined behavior checks
+CONFIG_OPTS += \
+	--enable UBSAN \
+	--enable UBSAN_BOUNDS \
+	--enable UBSAN_SHIFT \
+	--enable UBSAN_DIV_ZERO \
+	--enable UBSAN_UNREACHABLE
+
+# -- Internal structure and object checks
+CONFIG_OPTS += \
+	--enable DEBUG_LIST \
+	--enable DEBUG_PLIST \
+	--enable DEBUG_OBJECTS \
+	--enable DEBUG_OBJECTS_TIMERS \
+	--enable DEBUG_OBJECTS_WORK
+
 endif
+
+
 
 .PHONY: all clean fuzz module initrd links
 
