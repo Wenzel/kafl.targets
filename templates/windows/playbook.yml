@@ -38,6 +38,18 @@
         value: "{{ ansible_proxy }}"
       when: ansible_proxy | length > 0
 
+    - name: Install OpenSSH Client and Server
+      ansible.windows.win_powershell:
+        script: |
+          Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
+          Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+
+    - name: Set sshd service to start automatically
+      win_service:
+        name: sshd
+        start_mode: auto
+        state: started
+
     - name: Disable uncessary services
       win_service:
         name: "{{ item }}"
@@ -114,3 +126,39 @@
 
     - name: Enable Testsigning
       win_command: Bcdedit.exe -set TESTSIGNING ON
+
+    - name: Download Simics ISPM package
+      win_get_url:
+        url: https://registrationcenter-download.intel.com/akdlm/IRC_NAS/881ee76a-c24d-41c0-af13-5d89b2a857ff/simics-6-packages-2023-31-win64.ispm
+        dest: "{{ ansible_env['USERPROFILE'] }}\\Downloads\\simics-6-packages.ispm"
+
+    - name: Download Intel Simics Package Manager installer
+      win_get_url:
+        url: https://registrationcenter-download.intel.com/akdlm/IRC_NAS/881ee76a-c24d-41c0-af13-5d89b2a857ff/intel-simics-package-manager-1.7.5-win64.exe
+        dest: "{{ ansible_env['USERPROFILE'] }}\\Downloads\\intel-simics-package-manager-win64.exe"
+
+    - name: Install Intel Simics Package Manager silently
+      win_command: intel-simics-package-manager-win64.exe /S
+      args:
+        chdir: "{{ ansible_env['USERPROFILE'] }}\\Downloads"
+
+    - name: Add ISPM to user PATH
+      win_environment:
+        state: present
+        name: Path
+        value: "{{ ansible_env['USERPROFILE'] }}\\AppData\\Local\\Programs\\Intel Simics Package Manager"
+        level: user
+        separator: ';'
+
+    - name: Create Simics install directory in user profile
+      win_file:
+        path: "{{ ansible_env['USERPROFILE'] }}\\simics"
+        state: directory
+
+    - name: Set Simics install directory in ISPM settings
+      win_command: ispm.exe settings install-dir "{{ ansible_env['USERPROFILE'] }}\\simics"
+
+    - name: Install Simics bundle
+      win_command: >
+        ispm.exe packages --install-bundle "{{ ansible_env['USERPROFILE'] }}\Downloads\simics-6-packages-2023-31-win64.ispm"
+        --non-interactive --trust-insecure-packages
