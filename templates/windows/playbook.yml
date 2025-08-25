@@ -71,35 +71,76 @@
         type: dword
         state: present
 
-    - name: Download Visual Studio 2022 community installer
-      win_get_url:
-        url: https://aka.ms/vs/17/release/vs_Community.exe
-        dest: "{{ ansible_facts['env']['TEMP'] }}\\vs_community.exe"
+    - name: Install Visual Studio with offline layout
+      block:
+        - name: Download Visual Studio 2022 community installer
+          win_get_url:
+            url: https://aka.ms/vs/17/release/vs_Community.exe
+            dest: "{{ ansible_facts['env']['TEMP'] }}\\vs_community.exe"
 
-    # https://learn.microsoft.com/en-us/visualstudio/install/workload-component-id-vs-community?view=vs-2022&preserve-view=true
-    - name: Install Visual Studio Native Desktop Workload
-      win_command:
-        cmd: vs_community.exe --quiet --wait --norestart --add Microsoft.VisualStudio.Workload.NativeDesktop
-      args:
-        chdir: "{{ ansible_facts['env']['TEMP'] }}"
+        - name: Create VS layout directory
+          win_file:
+            path: "C:\\vs_layout"
+            state: directory
 
-    - name: Install Visual Studio VC Tools x86 x64
-      win_command:
-        cmd: vs_community.exe --quiet --wait --norestart --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64
-      args:
-        chdir: "{{ ansible_facts['env']['TEMP'] }}"
+        # https://learn.microsoft.com/en-us/visualstudio/install/workload-component-id-vs-community?view=vs-2022&preserve-view=true
+        - name: Create VS offline layout with all components
+          win_command:
+            cmd: >
+              vs_community.exe --layout C:\vs_layout
+              --add Microsoft.VisualStudio.Workload.NativeDesktop
+              --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64
+              --add Microsoft.VisualStudio.Component.Windows11SDK.22621
+              --add Component.Microsoft.Windows.DriverKit
+              --lang en-US --quiet --wait
+          args:
+            chdir: "{{ ansible_facts['env']['TEMP'] }}"
+          register: vs_layout
 
-    - name: Install Windows 11 SDK 10.0.22621.0
-      win_command:
-        cmd: vs_community.exe --quiet --wait --norestart --add Microsoft.VisualStudio.Component.Windows11SDK.22621
-      args:
-        chdir: "{{ ansible_facts['env']['TEMP'] }}"
+        - name: Install Visual Studio from offline layout
+          win_command:
+            cmd: vs_setup.exe --noweb --quiet --wait --norestart
+          args:
+            chdir: "C:\\vs_layout"
+          register: vs_install
 
-    - name: Install Windows Driver Kit
-      win_command:
-        cmd: vs_community.exe --quiet --wait --norestart --add Component.Microsoft.Windows.DriverKit
-      args:
-        chdir: "{{ ansible_facts['env']['TEMP'] }}"
+      rescue:
+        - name: Create logs directory on control machine
+          file:
+            path: "./logs"
+            state: directory
+          delegate_to: localhost
+
+        - name: Find VS installer logs
+          win_find:
+            paths:
+              - "{{ ansible_facts['env']['TEMP'] }}"
+            patterns: "dd_*.log"
+            recurse: yes
+          register: vs_log_files
+
+        - name: Fetch VS installer logs
+          fetch:
+            src: "{{ item.path }}"
+            dest: "./logs/{{ inventory_hostname }}_{{ item.path | win_basename }}"
+            flat: yes
+          with_items: "{{ vs_log_files.files }}"
+
+        - name: Fail with error info
+          fail:
+            msg: |
+              Visual Studio installation failed with return code: {{ vs_install.rc | default('unknown') }}
+              VS installer logs collected in ./logs/ directory.
+
+      always:
+        - name: Cleanup installer and layout
+          win_file:
+            path: "{{ item }}"
+            state: absent
+          with_items:
+            - "{{ ansible_facts['env']['TEMP'] }}\\vs_community.exe"
+            - "C:\\vs_layout"
+          ignore_errors: yes
 
     - name: Download latest WDK for 10.0.22621.0
       win_get_url:
