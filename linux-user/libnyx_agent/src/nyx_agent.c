@@ -92,7 +92,7 @@ static nyx_cpu_type_t _get_nyx_cpu_type(void)
 	memcpy(str, regs, sizeof(regs));
 	str[16] = '\0';
 
-	//debug_printf("CPUID string: >>%s<<\n", str);
+	debug_printf("CPUID string: >>%s<<\n", str);
 
 	if (0 == strncmp(str, "NYX vCPU (PT)", sizeof(str))) {
 		return nyx_cpu_v1;
