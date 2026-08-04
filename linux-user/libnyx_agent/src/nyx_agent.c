@@ -111,6 +111,46 @@ nyx_cpu_type_t get_nyx_cpu_type(void)
 	return nyx_cpu_type;
 }
 
+/*
+On nyx_cpu_v2 there is no Nyx KVM module, so a vmcall would trap as a plain
+KVM_EXIT_HYPERCALL that QEMU-Nyx's accel/kvm/kvm-all.c does not handle at all.
+The host side instead watches for the VMware I/O backdoor signature (an outl
+of 0x8080801f to port 0x5658, see handle_vmware_hypercall() in kvm-all.c),
+which any hypervisor running on real VMware-compatible hardware emulation
+already has to trap regardless of custom kernel modules, and calls the exact
+same handle_kafl_hypercall() the vmcall path calls, just reading the
+hypercall id and argument from ebx/ecx same as kAFL_hypercall() does. The
+data value 0x8080801f matches HYPERCALL_KAFL_RAX_ID (0x01f) in its low byte,
+which is the same magic the vmcall path loads into eax; adjust_rip() in
+fast_vm_reload_sync.c rewinds guest eip by exactly 1 byte after this trap,
+matching outl's single-byte opcode.
+*/
+#if defined(__x86_64__)
+static inline uint64_t vmware_backdoor_hypercall(uint64_t id, uint64_t arg)
+{
+	/*
+	eax is both the outl's data operand (the trap signature going in) and
+	where handle_kafl_hypercall()'s return value comes back, same as
+	kAFL_hypercall()'s vmcall does with "=a"(nr) : "a"(nr). "+a" ties both
+	directions to the one register instead of two separate constraints.
+	*/
+	uint64_t ret = 0x8080801f;
+	asm volatile ("outl %%eax, %%dx"
+				  : "+a"(ret)
+				  : "d"(0x5658), "b"(id), "c"(arg));
+	return ret;
+}
+#elif defined(__i386__)
+static inline uint32_t vmware_backdoor_hypercall(uint32_t id, uint32_t arg)
+{
+	uint32_t ret = 0x8080801f;
+	asm volatile ("outl %%eax, %%dx"
+				  : "+a"(ret)
+				  : "d"(0x5658), "b"(id), "c"(arg));
+	return ret;
+}
+#endif
+
 /**
  * Execute hypercall depending on Nyx CPU type
  */
@@ -121,6 +161,8 @@ unsigned long hypercall(unsigned id, uintptr_t arg)
 		debug_printf("\t# vmcall(0x%x,0x%lx) ..\n", id, arg);
 		return kAFL_hypercall(id, arg);
 	case nyx_cpu_v2:
+		debug_printf("\t# backdoor(0x%x,0x%lx) ..\n", id, arg);
+		return vmware_backdoor_hypercall(id, arg);
 	case nyx_cpu_none:
 		debug_printf("\t# vmcall(0x%x,0x%lx) skipped..\n", id, arg);
 		return 0;

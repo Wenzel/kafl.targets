@@ -20,12 +20,32 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <assert.h>
+#include <stdarg.h>
 
 #include <linux/version.h>
 #include <linux/loop.h>
 
 #include "nyx_api.h"
 #include "nyx_agent.h"
+
+static void backdoor_aware_habort(const char *msg)
+{
+	hypercall(HYPERCALL_KAFL_USER_ABORT, (uintptr_t)msg);
+}
+
+static void backdoor_aware_hprintf(const char *format, ...) __attribute__((unused));
+static void backdoor_aware_hprintf(const char *format, ...)
+{
+	static char hprintf_buffer[HPRINTF_MAX_SIZE] __attribute__((aligned(4096)));
+	va_list args;
+	va_start(args, format);
+	vsnprintf(hprintf_buffer, HPRINTF_MAX_SIZE, format, args);
+	va_end(args);
+	hypercall(HYPERCALL_KAFL_PRINTF, (uintptr_t)hprintf_buffer);
+}
+
+#define habort backdoor_aware_habort
+#define hprintf backdoor_aware_hprintf
 
 #define PAGE_SIZE 4096
 #define KAFL_TMP_FILE "/tmp/trash"
@@ -58,10 +78,10 @@ int agent_init(int verbose)
 	host_config_t host_config;
 	
 	// set ready state
-	kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
-	kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
+	hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
+	hypercall(HYPERCALL_KAFL_RELEASE, 0);
 
-	kAFL_hypercall(HYPERCALL_KAFL_GET_HOST_CONFIG, (uintptr_t)&host_config);
+	hypercall(HYPERCALL_KAFL_GET_HOST_CONFIG, (uintptr_t)&host_config);
 
 	if (verbose) {
 		fprintf(stderr, "GET_HOST_CONFIG\n");
@@ -108,7 +128,7 @@ int agent_init(int verbose)
 	//agent_config.input_buffer_size;
 	//agent_config.dump_payloads; // set by hypervisor (??)
 
-	kAFL_hypercall(HYPERCALL_KAFL_SET_AGENT_CONFIG,
+	hypercall(HYPERCALL_KAFL_SET_AGENT_CONFIG,
 		       (uintptr_t)&agent_config);
 
 	return 0;
@@ -121,6 +141,13 @@ int main(int argc, char **argv)
 	int loopctlfd, loopfd, backingfile;
 	long devnr;
 	char *filesystemtype = NULL;
+
+	/*
+	Must run before any hypercall() call, hypercall() asserts on
+	nyx_cpu_invalid otherwise. Reads the NYX vCPU model string from CPUID,
+	set by target/i386/cpu.c from the -cpu kAFL64-Hypervisor-v1/v2 choice.
+	*/
+	get_nyx_cpu_type();
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: fs_fuzzer <fstype>\n"
@@ -148,8 +175,8 @@ int main(int argc, char **argv)
 
 	agent_init(1);
 
-	//kAFL_hypercall(HYPERCALL_KAFL_SUBMIT_CR3, 0); // need kernel CR3!
-	kAFL_hypercall(HYPERCALL_KAFL_GET_PAYLOAD, (uint64_t)pbuf);
+	//hypercall(HYPERCALL_KAFL_SUBMIT_CR3, 0); // need kernel CR3!
+	hypercall(HYPERCALL_KAFL_GET_PAYLOAD, (uint64_t)pbuf);
 
 	loopfd = open(loopname, O_RDWR);
 	CHECK_ERRNO(loopfd != -1, "Failed to open loop device");
@@ -194,9 +221,9 @@ int main(int argc, char **argv)
 		}
 
 		// first round for warmup - real start now
-		kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
-		kAFL_hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, 0);
-		kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
+		hypercall(HYPERCALL_KAFL_RELEASE, 0);
+		hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, 0);
+		hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
 
 	}
 
