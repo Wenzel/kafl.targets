@@ -175,8 +175,16 @@ int main(int argc, char **argv)
 
 	agent_init(1);
 
-	//hypercall(HYPERCALL_KAFL_SUBMIT_CR3, 0); // need kernel CR3!
+	/*
+	CR3 filtering correctness check only, not part of the normal
+	fs_fuzzer flow: submitted after GET_PAYLOAD (not before, as the
+	commented-out call above this used to do) because UINT64_MAX asks QEMU
+	to substitute parent_cr3, which GET_PAYLOAD is what populates. A
+	ring-3 process cannot read its own %cr3 (CPL0-only instruction), so
+	there is no other way for this target to learn the value to submit.
+	*/
 	hypercall(HYPERCALL_KAFL_GET_PAYLOAD, (uint64_t)pbuf);
+	hypercall(HYPERCALL_KAFL_SUBMIT_CR3, UINT64_MAX);
 
 	loopfd = open(loopname, O_RDWR);
 	CHECK_ERRNO(loopfd != -1, "Failed to open loop device");
