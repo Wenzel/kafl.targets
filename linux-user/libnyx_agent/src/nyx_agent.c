@@ -317,7 +317,7 @@ int hpush_file(char *src_path, char *dst_name, int append)
 			break;
 		} else if (bytes > 0) {
 			put_req.bytes = bytes;
-			kAFL_hypercall(HYPERCALL_KAFL_DUMP_FILE, (uintptr_t)&put_req);
+			hypercall(HYPERCALL_KAFL_DUMP_FILE, (uintptr_t)&put_req);
 			total_sent += bytes;
 			// append any subsequent chunks
 			put_req.append = 1;
